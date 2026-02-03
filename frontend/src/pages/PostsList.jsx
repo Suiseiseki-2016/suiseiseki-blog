@@ -20,9 +20,10 @@ function PostsList() {
   useEffect(() => {
     setLoading(true)
     setError(null)
+    const url = apiUrl(`/api/posts?limit=${PAGE_SIZE}&offset=0`)
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 10000)
-    fetch(apiUrl(`/api/posts?limit=${PAGE_SIZE}&offset=0`), { signal: controller.signal })
+    fetch(url, { signal: controller.signal })
       .then((res) => {
         clearTimeout(timeoutId)
         if (!res.ok) {
@@ -32,6 +33,10 @@ function PostsList() {
             if (e instanceof Error && e.message.startsWith('HTTP')) throw e
             throw new Error(res.statusText || `HTTP ${res.status}`)
           })
+        }
+        const ct = res.headers.get('content-type')
+        if (!ct || !ct.includes('application/json')) {
+          throw new Error(`后端返回非 JSON (Content-Type: ${ct || '无'})，请确认 API 地址正确: ${url}`)
         }
         return res.json()
       })
@@ -44,7 +49,10 @@ function PostsList() {
       })
       .catch((err) => {
         clearTimeout(timeoutId)
-        setError(err.name === 'AbortError' ? '请求超时，请确认后端已启动 (http://localhost:8080/health)' : (err.message || '网络错误'))
+        const msg = err.name === 'AbortError'
+          ? '请求超时，请确认后端已启动: http://localhost:8080/health'
+          : (err.message || '网络错误')
+        setError(msg)
         setLoading(false)
       })
   }, [])

@@ -53,6 +53,7 @@ database:
 
 posts:
   path: "../posts"
+  remote_url: "https://github.com/你的用户名/blog-posts.git"   # 当 posts 无文章时自动 clone 此仓库；留空则不自动 clone
 
 webhook:
   secret: ""
@@ -71,6 +72,7 @@ frontend:
 | `server.mode` | `dev` / `prod`（prod 下同步时会 `git pull`） | `dev` |
 | `database.path` | SQLite 路径（相对 `backend/`） | `./blog.db` |
 | `posts.path` | 文章目录；生产多为文章仓库 clone 路径 | dev: `../posts`，prod: `/var/lib/blog/posts` |
+| `posts.remote_url` | 当 posts 无文章时自动 clone 的远程仓库 URL（如 `https://github.com/xxx/blog-posts.git`）；留空则不自动 clone | 空 |
 | `webhook.secret` | GitHub Webhook Secret，生产必填 | 空 |
 | `webhook.git_repo_path` | 生产环境文章仓库在服务器上的路径 | 空 |
 | `sync.interval_minutes` | 定期同步间隔（分钟）；0 表示不启用，仅靠 Webhook 触发 | `0` |
@@ -92,6 +94,7 @@ frontend:
 | `MODE` | 覆盖 server.mode |
 | `DB_PATH` | 覆盖 database.path |
 | `POSTS_PATH` | 覆盖 posts.path |
+| `POSTS_REMOTE_URL` | 覆盖 posts.remote_url（当 posts 无文章时自动 clone 的仓库） |
 | `GIT_REPO_PATH` | 覆盖 webhook.git_repo_path / 生产文章目录 |
 | `CONFIG_PATH` | 指定 config.yaml 路径 |
 | `SYNC_INTERVAL_MINUTES` | 覆盖 sync.interval_minutes |

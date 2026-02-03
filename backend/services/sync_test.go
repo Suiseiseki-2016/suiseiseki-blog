@@ -38,7 +38,7 @@ published_at: 2024-01-01
 
 	os.WriteFile(mdFile, []byte(content), 0644)
 
-	syncService := NewSyncService(db.Conn(), postsDir, true, nil)
+	syncService := NewSyncService(db.Conn(), postsDir, true, nil, "")
 
 	if err := syncService.Sync(); err != nil {
 		t.Fatalf("同步失败: %v", err)
@@ -86,7 +86,7 @@ slug: old-post
 
 # 旧文章`), 0644)
 
-	syncService := NewSyncService(db.Conn(), postsDir, true, nil)
+	syncService := NewSyncService(db.Conn(), postsDir, true, nil, "")
 	if err := syncService.Sync(); err != nil {
 		t.Fatalf("第一次同步失败: %v", err)
 	}

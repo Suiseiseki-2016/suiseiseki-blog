@@ -17,7 +17,8 @@ type Config struct {
 	DBPath string
 
 	// Posts
-	PostsPath string
+	PostsPath    string
+	PostsRemoteURL string // 当 posts 无文章时自动 clone 的远程仓库 URL，如 https://github.com/xxx/blog-posts.git
 
 	// GitHub Webhook
 	WebhookSecret string
@@ -34,7 +35,10 @@ type Config struct {
 type configFile struct {
 	Server   struct { Port string `yaml:"port"`; Mode string `yaml:"mode"` }
 	Database struct { Path string `yaml:"path"` }
-	Posts    struct { Path string `yaml:"path"` }
+	Posts    struct {
+		Path      string `yaml:"path"`
+		RemoteURL string `yaml:"remote_url"`
+	}
 	Webhook  struct {
 		Secret      string `yaml:"secret"`
 		GitRepoPath string `yaml:"git_repo_path"`
@@ -86,6 +90,9 @@ func Load() *Config {
 		if f.Posts.Path != "" {
 			cfg.PostsPath = f.Posts.Path
 		}
+		if f.Posts.RemoteURL != "" {
+			cfg.PostsRemoteURL = f.Posts.RemoteURL
+		}
 		if f.Webhook.Secret != "" {
 			cfg.WebhookSecret = f.Webhook.Secret
 		}
@@ -110,6 +117,9 @@ func Load() *Config {
 	}
 	if v := os.Getenv("POSTS_PATH"); v != "" {
 		cfg.PostsPath = v
+	}
+	if v := os.Getenv("POSTS_REMOTE_URL"); v != "" {
+		cfg.PostsRemoteURL = v
 	}
 	if cfg.Mode != "dev" && (cfg.PostsPath == "" || cfg.PostsPath == "../posts") {
 		if v := os.Getenv("GIT_REPO_PATH"); v != "" {

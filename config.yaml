@@ -10,6 +10,7 @@ database:
 
 posts:
   path: "../posts"   # 开发：项目根目录的 posts/；生产：填服务器上 clone 出来的目录路径（如 /var/lib/blog/posts），不是 Git URL
+  remote_url: "https://github.com/Suiseiseki-2016/suiseiseki-blog-posts.git"   # 当 posts 无文章时自动 clone 此仓库
 
 webhook:
   secret: ""         # 生产环境必填，与 GitHub Webhook 的 Secret 一致

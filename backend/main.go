@@ -69,12 +69,22 @@ func main() {
 	log.Printf("数据库已初始化: %s", cfg.DBPath)
 
 	syncNotifier := &syncNotifier{}
-	syncService := services.NewSyncService(db.Conn(), cfg.PostsPath, cfg.IsDev, syncNotifier)
+	syncService := services.NewSyncService(db.Conn(), cfg.PostsPath, cfg.IsDev, syncNotifier, cfg.PostsRemoteURL)
 
+	// 配置了远程仓库时先同步完成再监听，确保首屏能加载出文章；否则后台同步
 	if cfg.IsDev {
-		log.Println("开发模式：执行初始同步...")
-		if err := syncService.Sync(); err != nil {
-			log.Printf("初始同步失败: %v", err)
+		if cfg.PostsRemoteURL != "" {
+			log.Println("开发模式：执行初始同步（含远程 clone），完成后启动...")
+			if err := syncService.Sync(); err != nil {
+				log.Printf("初始同步失败: %v", err)
+			}
+		} else {
+			go func() {
+				log.Println("开发模式：执行初始同步...")
+				if err := syncService.Sync(); err != nil {
+					log.Printf("初始同步失败: %v", err)
+				}
+			}()
 		}
 	}
 

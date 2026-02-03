@@ -19,24 +19,95 @@ type SyncEventNotifier interface {
 }
 
 type SyncService struct {
-	db        *sql.DB
-	postsPath string
-	isDev     bool
-	notifier  SyncEventNotifier
+	db          *sql.DB
+	postsPath   string
+	remoteURL   string
+	isDev       bool
+	notifier    SyncEventNotifier
 }
 
-func NewSyncService(db *sql.DB, postsPath string, isDev bool, notifier SyncEventNotifier) *SyncService {
+func NewSyncService(db *sql.DB, postsPath string, isDev bool, notifier SyncEventNotifier, remoteURL string) *SyncService {
 	return &SyncService{
 		db:        db,
 		postsPath: postsPath,
+		remoteURL: remoteURL,
 		isDev:     isDev,
 		notifier:  notifier,
 	}
 }
 
-// Sync 同步文章：扫描目录，解析 Markdown，更新数据库；生产环境先 git pull
+// ensurePostsFromRemote 当 posts 无文章时从远程仓库自动 clone
+func (s *SyncService) ensurePostsFromRemote() error {
+	if s.remoteURL == "" {
+		return nil
+	}
+
+	// 目录不存在：直接 clone 到 postsPath
+	if _, err := os.Stat(s.postsPath); os.IsNotExist(err) {
+		parent := filepath.Dir(s.postsPath)
+		if err := os.MkdirAll(parent, 0755); err != nil {
+			return fmt.Errorf("创建目录失败: %w", err)
+		}
+		log.Printf("posts 目录不存在，从远程仓库 clone: %s", s.remoteURL)
+		if err := s.gitClone(s.remoteURL, s.postsPath); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// 目录存在：检查是否有文章（.md 文件，不含 README）
+	files, err := s.scanMarkdownFiles()
+	if err != nil {
+		return nil // 如权限等问题，不阻塞后续
+	}
+	if len(files) > 0 {
+		return nil // 已有文章，无需 clone
+	}
+
+	// 无文章且已是 git 仓库：后面会走 git pull，不在此处 clone
+	if _, err := os.Stat(filepath.Join(s.postsPath, ".git")); err == nil {
+		return nil
+	}
+
+	// 无文章且不是 git 仓库：先 clone 到临时目录，成功后再替换，避免 clone 失败后目录被删空
+	log.Printf("posts 无文章且非 git 仓库，从远程仓库 clone: %s", s.remoteURL)
+	tmpDir, err := os.MkdirTemp(filepath.Dir(s.postsPath), "posts-clone-*")
+	if err != nil {
+		return fmt.Errorf("创建临时目录失败: %w", err)
+	}
+	if err := s.gitClone(s.remoteURL, tmpDir); err != nil {
+		os.RemoveAll(tmpDir)
+		return err
+	}
+	if err := os.RemoveAll(s.postsPath); err != nil {
+		os.RemoveAll(tmpDir)
+		return fmt.Errorf("清理 posts 目录失败: %w", err)
+	}
+	if err := os.Rename(tmpDir, s.postsPath); err != nil {
+		os.RemoveAll(tmpDir)
+		return fmt.Errorf("替换 posts 目录失败: %w", err)
+	}
+	return nil
+}
+
+func (s *SyncService) gitClone(url, dest string) error {
+	cmd := exec.Command("git", "clone", "--depth", "1", url, dest)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("git clone 失败: %v, 输出: %s", err, string(output))
+	}
+	log.Printf("git clone 成功: %s", string(output))
+	return nil
+}
+
+// Sync 同步文章：无文章时先尝试从远程 clone，再扫描目录、解析 Markdown、更新数据库；生产环境先 git pull
 func (s *SyncService) Sync() error {
 	log.Println("开始同步文章...")
+
+	if err := s.ensurePostsFromRemote(); err != nil {
+		log.Printf("ensurePostsFromRemote 失败: %v", err)
+		// 不 return，继续用现有目录
+	}
 
 	if !s.isDev {
 		if err := s.gitPull(); err != nil {
