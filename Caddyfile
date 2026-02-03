@@ -1,0 +1,21 @@
+# Caddy 反向代理配置
+# 用于生产环境，自动处理 HTTPS
+
+yourdomain.com {
+    # 反向代理到后端 API
+    handle /api/* {
+        reverse_proxy localhost:8080
+    }
+
+    # 静态文件（前端构建产物）
+    handle {
+        root * frontend/dist
+        try_files {path} /index.html
+        file_server
+    }
+}
+
+# 如果需要 HTTP 重定向到 HTTPS（Caddy 会自动处理）
+# http://yourdomain.com {
+#     redir https://yourdomain.com{uri}
+# }

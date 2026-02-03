@@ -1,0 +1,25 @@
+[Unit]
+Description=Blog Suiseiseki Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/lib/blog
+ExecStart=/var/lib/blog/blog-suiseiseki
+Restart=always
+RestartSec=5
+Environment="PORT=8080"
+Environment="MODE=prod"
+Environment="DB_PATH=/var/lib/blog/blog.db"
+Environment="POSTS_PATH=/var/lib/blog/posts"
+Environment="WEBHOOK_SECRET=your-webhook-secret-here"
+Environment="GIT_REPO_PATH=/var/lib/blog/posts"
+
+# 日志
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=blog-suiseiseki
+
+[Install]
+WantedBy=multi-user.target

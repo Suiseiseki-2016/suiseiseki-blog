@@ -1,0 +1,24 @@
+# Blog Suiseiseki 后端配置
+# 环境变量会覆盖此文件中的同名项；敏感信息（如 WEBHOOK_SECRET）建议用 .env 或环境变量设置。
+
+server:
+  port: "8080"
+  mode: dev   # dev | prod
+
+database:
+  path: "./blog.db"
+
+posts:
+  path: "../posts"   # 开发：项目根目录的 posts/；生产：填服务器上 clone 出来的目录路径（如 /var/lib/blog/posts），不是 Git URL
+
+webhook:
+  secret: ""         # 生产环境必填，与 GitHub Webhook 的 Secret 一致
+  git_repo_path: ""  # 生产环境文章仓库在服务器上的路径，如 /var/lib/blog/posts
+
+# 定期同步：每隔 N 分钟从远程仓库 git pull 并更新数据库；0 表示不启用（仅靠 Webhook 触发）
+sync:
+  interval_minutes: 5
+
+# 开发时若 Vite 代理不生效，可填此后端地址，前端将直连后端；留空则走代理
+frontend:
+  api_base_url: ""   # 如 http://localhost:8080
