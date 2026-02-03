@@ -24,5 +24,5 @@ cd frontend && npm install && cd ..
 
 **`npm run dev` 卡住不动**：先看 3000 端口是否被占（`lsof -i :3000`）；若被占则关掉对应进程或改 `vite.config.js` 里 `port`。若仍卡在 `> vite` 无输出，可试 Node 18/20 LTS（部分 Node 23 环境会卡住），或删掉 `frontend/node_modules` 和 `package-lock.json` 后重新 `npm install`。
 
-**页面一直「加载中」且后端收不到请求**：多半是 Vite 代理没把 `/api` 转到后端。在 **config.yaml** 里设置 `frontend.api_base_url: "http://localhost:8080"`，Vite 启动时会自动读取，前端将直连后端；后端开发模式已开 CORS。
+**页面一直「加载中」且后端收不到请求**：前端直连后端 127.0.0.1:server.port（从 config.yaml 读取）。确认后端已启动、端口与 config.yaml 中 `server.port` 一致；开发模式已开 CORS。若本机开了系统代理，需将 127.0.0.1 设为不走代理。
 

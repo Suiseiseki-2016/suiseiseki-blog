@@ -3,23 +3,29 @@ import react from '@vitejs/plugin-react'
 import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
 
-// 从项目根 config.yaml 读取 frontend.api_base_url，供前端直连后端（代理不生效时）
+// Read server.port and frontend.port from config.yaml
+// Use proxy so browser only talks to same origin (localhost:3000) — avoids 502/504 when system proxy intercepts 127.0.0.1
+let serverPort = '8080'
+let devPort = 3000
 const configPath = resolve(__dirname, '../config.yaml')
 if (existsSync(configPath)) {
   const content = readFileSync(configPath, 'utf8')
-  const m = content.match(/api_base_url:\s*["']?([^"'\s#]+)["']?/)
-  if (m) process.env.VITE_API_URL = m[1].trim()
+  serverPort = content.match(/^server:\s*\n\s*port:\s*["']?(\d+)/m)?.[1] || '8080'
+  const frontPort = content.match(/^frontend:\s*\n[\s\S]*?port:\s*["']?(\d+)/m)?.[1] || '3000'
+  devPort = parseInt(frontPort, 10)
 }
+
+const backendTarget = `http://127.0.0.1:${serverPort}`
 
 export default defineConfig({
   plugins: [react()],
   server: {
-    port: 3000,
-    strictPort: true,  // 端口被占用时直接报错，不等待
-    // host: '0.0.0.0',  // 需要本机 IP 访问时再取消注释；部分环境下会卡住启动
+    host: '0.0.0.0',
+    port: devPort,
+    strictPort: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:8080',
+        target: backendTarget,
         changeOrigin: true,
       },
     },

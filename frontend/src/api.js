@@ -1,5 +1,6 @@
-// 开发时默认走 Vite 代理 (/api -> localhost:8080)；若代理不生效，可设 VITE_API_URL=http://localhost:8080 直连后端
-const API_BASE = import.meta.env.VITE_API_URL || ''
+// Dev: relative /api so browser hits same origin (localhost:3000), Vite proxy forwards to backend. No direct 127.0.0.1 — avoids 502/504 from system proxy.
+// Prod: same origin (Caddy/nginx serves both).
+const API_BASE = ''
 
 export function apiUrl(path) {
   const p = path.startsWith('/') ? path : `/${path}`

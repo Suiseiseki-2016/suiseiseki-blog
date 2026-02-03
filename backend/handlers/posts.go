@@ -15,7 +15,7 @@ import (
 	"blog-suiseiseki/utils"
 )
 
-// 匹配 <img ... src="任意路径" ...>
+// Match <img ... src="path" ...>
 var reImgSrc = regexp.MustCompile(`(?i)<img([^>]*)\s+src="([^"]+)"([^>]*)>`)
 
 type PostsHandler struct {
@@ -30,7 +30,7 @@ func NewPostsHandler(db *sql.DB, postsPath string) *PostsHandler {
 	}
 }
 
-// GetPosts 获取文章列表
+// GetPosts returns the list of posts.
 func (h *PostsHandler) GetPosts(c *gin.Context) {
 	limit := c.DefaultQuery("limit", "20")
 	offset := c.DefaultQuery("offset", "0")
@@ -80,7 +80,7 @@ func (h *PostsHandler) GetPosts(c *gin.Context) {
 	})
 }
 
-// GetPost 获取单篇文章详情（包含 HTML 内容）
+// GetPost returns a single post with HTML content.
 func (h *PostsHandler) GetPost(c *gin.Context) {
 	slug := c.Param("slug")
 
@@ -102,7 +102,7 @@ func (h *PostsHandler) GetPost(c *gin.Context) {
 	)
 
 	if err == sql.ErrNoRows {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文章不存在"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "post not found"})
 		return
 	}
 	if err != nil {
@@ -115,17 +115,17 @@ func (h *PostsHandler) GetPost(c *gin.Context) {
 
 	_, markdownContent, err := utils.ParseMarkdownFile(p.ContentPath)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "读取文章内容失败"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read post content"})
 		return
 	}
 
 	htmlContent, err := utils.MarkdownToHTML(markdownContent)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "转换Markdown失败"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "markdown to HTML failed"})
 		return
 	}
 
-	// 将相对图片路径重写为 /api/posts-assets/...，使仓库内图片能正确展示
+	// Rewrite relative img src to /api/posts-assets/... so repo images display correctly
 	postDirRel := "."
 	if absPosts, err := filepath.Abs(h.postsPath); err == nil {
 		if postDirAbs, err := filepath.Abs(filepath.Dir(p.ContentPath)); err == nil {
@@ -147,7 +147,7 @@ func (h *PostsHandler) GetPost(c *gin.Context) {
 	c.JSON(http.StatusOK, postWithContent)
 }
 
-// rewriteRelativeImgSrc 将 HTML 中相对路径的 img src 重写为 /api/posts-assets/{postDirRel}/{src}
+// rewriteRelativeImgSrc rewrites relative img src in HTML to /api/posts-assets/{postDirRel}/{src}.
 func rewriteRelativeImgSrc(html, postDirRel string) string {
 	postDirRel = path.Clean(postDirRel)
 	if strings.Contains(postDirRel, "..") {
@@ -160,7 +160,7 @@ func rewriteRelativeImgSrc(html, postDirRel string) string {
 		}
 		prefix, src, suffix := subs[1], subs[2], subs[3]
 		src = strings.TrimSpace(src)
-		// 只重写相对路径，跳过 http(s) 和空
+		// Only rewrite relative paths; skip http(s) and empty
 		if src == "" || strings.HasPrefix(src, "http://") || strings.HasPrefix(src, "https://") || strings.Contains(src, "..") {
 			return match
 		}
@@ -173,14 +173,14 @@ func rewriteRelativeImgSrc(html, postDirRel string) string {
 	})
 }
 
-// ServePostAsset 托管文章仓库内的静态资源（图片等），GET /api/posts-assets/*path
+// ServePostAsset serves static assets (e.g. images) from the posts repo; GET /api/posts-assets/*path.
 func (h *PostsHandler) ServePostAsset(c *gin.Context) {
 	rawPath := strings.TrimPrefix(c.Param("path"), "/")
 	if rawPath == "" {
 		c.Status(http.StatusNotFound)
 		return
 	}
-	// 禁止路径穿越
+	// Prevent path traversal
 	rawPath = filepath.Clean(filepath.FromSlash(rawPath))
 	if strings.Contains(rawPath, "..") || filepath.IsAbs(rawPath) {
 		c.Status(http.StatusNotFound)

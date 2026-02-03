@@ -24,7 +24,7 @@ func TestHealthEndpoint(t *testing.T) {
 
 	db, err := database.New(dbPath)
 	if err != nil {
-		t.Fatalf("创建数据库失败: %v", err)
+		t.Fatalf("create db: %v", err)
 	}
 	defer db.Close()
 
@@ -39,15 +39,15 @@ func TestHealthEndpoint(t *testing.T) {
 	handler(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("期望状态码 200，得到 %d", w.Code)
+		t.Fatalf("want status 200, got %d", w.Code)
 	}
 
 	var response map[string]interface{}
 	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
-		t.Fatalf("解析响应失败: %v", err)
+		t.Fatalf("parse response: %v", err)
 	}
 
 	if response["status"] != "ok" {
-		t.Errorf("期望状态 'ok'，得到 %v", response["status"])
+		t.Errorf("want status ok, got %v", response["status"])
 	}
 }

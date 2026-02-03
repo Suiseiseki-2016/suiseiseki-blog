@@ -1,25 +1,25 @@
-# Blog Suiseiseki 后端配置
-# 环境变量会覆盖此文件中的同名项；敏感信息（如 WEBHOOK_SECRET）建议用 .env 或环境变量设置。
+# Blog Suiseiseki backend config
+# Env vars override; keep secrets (e.g. WEBHOOK_SECRET) in .env or env.
 
 server:
-  port: "8080"
+  port: "9090"   # any free port (e.g. 9090) to avoid conflicts
   mode: dev   # dev | prod
 
 database:
   path: "./blog.db"
 
 posts:
-  path: "../posts"   # 开发：项目根目录的 posts/；生产：填服务器上 clone 出来的目录路径（如 /var/lib/blog/posts），不是 Git URL
-  remote_url: "https://github.com/Suiseiseki-2016/suiseiseki-blog-posts.git"   # 当 posts 无文章时自动 clone 此仓库
+  path: "../posts"   # Dev: project posts/; prod: server path (e.g. /var/lib/blog/posts), not a Git URL
+  remote_url: "https://github.com/Suiseiseki-2016/suiseiseki-blog-posts.git"   # Clone when posts dir is empty
 
 webhook:
-  secret: ""         # 生产环境必填，与 GitHub Webhook 的 Secret 一致
-  git_repo_path: ""  # 生产环境文章仓库在服务器上的路径，如 /var/lib/blog/posts
+  secret: ""         # Required in prod; must match GitHub Webhook Secret
+  git_repo_path: ""  # Prod path to posts repo on server, e.g. /var/lib/blog/posts
 
-# 定期同步：每隔 N 分钟从远程仓库 git pull 并更新数据库；0 表示不启用（仅靠 Webhook 触发）
+# Periodic sync: git pull every N minutes; 0 = disabled (Webhook only)
 sync:
   interval_minutes: 5
 
-# 开发时若 Vite 代理不生效，可填此后端地址，前端将直连后端；留空则走代理
+# Frontend dev server port (backend URL = 127.0.0.1:server.port, from config)
 frontend:
-  api_base_url: ""   # 如 http://localhost:8080
+  port: "3000"

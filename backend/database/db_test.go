@@ -11,16 +11,16 @@ func TestNew(t *testing.T) {
 
 	db, err := New(dbPath)
 	if err != nil {
-		t.Fatalf("创建数据库失败: %v", err)
+		t.Fatalf("create db: %v", err)
 	}
 	defer db.Close()
 
 	var count int
 	err = db.Conn().QueryRow("SELECT COUNT(*) FROM posts").Scan(&count)
 	if err != nil {
-		t.Fatalf("查询posts表失败: %v", err)
+		t.Fatalf("query posts: %v", err)
 	}
 	if count != 0 {
-		t.Fatalf("新数据库posts表应为空，得到 %d", count)
+		t.Fatalf("new db posts table should be empty, got %d", count)
 	}
 }

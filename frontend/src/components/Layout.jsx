@@ -14,13 +14,13 @@ function Layout({ children }) {
                 to="/"
                 className="text-gray-600 hover:text-gray-900 transition-colors"
               >
-                文章
+                Posts
               </Link>
               <Link
                 to="/resume"
                 className="text-gray-600 hover:text-gray-900 transition-colors"
               >
-                简历
+                Resume
               </Link>
             </div>
           </div>

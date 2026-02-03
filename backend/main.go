@@ -14,7 +14,7 @@ import (
 	"blog-suiseiseki/services"
 )
 
-// syncNotifier 同步完成时向所有订阅的 SSE 客户端广播，前端可静默刷新列表
+// syncNotifier broadcasts to SSE subscribers when sync completes so the frontend can refresh the list.
 type syncNotifier struct {
 	mu   sync.Mutex
 	subs []chan struct{}
@@ -62,27 +62,26 @@ func main() {
 
 	db, err := database.New(cfg.DBPath)
 	if err != nil {
-		log.Fatalf("初始化数据库失败: %v", err)
+		log.Fatalf("db init failed: %v", err)
 	}
 	defer db.Close()
 
-	log.Printf("数据库已初始化: %s", cfg.DBPath)
+	log.Printf("db initialized: %s", cfg.DBPath)
 
 	syncNotifier := &syncNotifier{}
 	syncService := services.NewSyncService(db.Conn(), cfg.PostsPath, cfg.IsDev, syncNotifier, cfg.PostsRemoteURL)
 
-	// 配置了远程仓库时先同步完成再监听，确保首屏能加载出文章；否则后台同步
 	if cfg.IsDev {
 		if cfg.PostsRemoteURL != "" {
-			log.Println("开发模式：执行初始同步（含远程 clone），完成后启动...")
+			log.Println("dev: running initial sync (may clone remote), then starting server...")
 			if err := syncService.Sync(); err != nil {
-				log.Printf("初始同步失败: %v", err)
+				log.Printf("initial sync failed: %v", err)
 			}
 		} else {
 			go func() {
-				log.Println("开发模式：执行初始同步...")
+				log.Println("dev: running initial sync...")
 				if err := syncService.Sync(); err != nil {
-					log.Printf("初始同步失败: %v", err)
+					log.Printf("initial sync failed: %v", err)
 				}
 			}()
 		}
@@ -90,13 +89,13 @@ func main() {
 
 	if cfg.SyncIntervalMinutes > 0 {
 		interval := time.Duration(cfg.SyncIntervalMinutes) * time.Minute
-		log.Printf("启用定期同步：每 %d 分钟从远程仓库拉取并更新", cfg.SyncIntervalMinutes)
+		log.Printf("sync: interval %d min", cfg.SyncIntervalMinutes)
 		go func() {
 			ticker := time.NewTicker(interval)
 			defer ticker.Stop()
 			for range ticker.C {
 				if err := syncService.Sync(); err != nil {
-					log.Printf("定期同步失败: %v", err)
+					log.Printf("periodic sync failed: %v", err)
 				}
 			}
 		}()
@@ -106,6 +105,8 @@ func main() {
 	webhookHandler := handlers.NewWebhookHandler(syncService, cfg.WebhookSecret)
 
 	r := gin.Default()
+	// Trust only local reverse proxy (Caddy/nginx); avoids "trusted all proxies" warning
+	r.SetTrustedProxies([]string{"127.0.0.1", "::1"})
 
 	if cfg.IsDev {
 		r.Use(func(c *gin.Context) {
@@ -125,9 +126,9 @@ func main() {
 		api.POST("/webhook", webhookHandler.HandleWebhook)
 		api.GET("/posts", postsHandler.GetPosts)
 		api.GET("/posts/:slug", postsHandler.GetPost)
-		// 文章仓库内图片等静态资源，便于 Markdown 中相对路径正确展示
+		// Static assets from posts repo for relative paths in Markdown
 		api.GET("/posts-assets/*path", postsHandler.ServePostAsset)
-		// SSE：同步完成后推送，前端可静默刷新列表而不整页重载
+		// SSE: push on sync completion so frontend can refresh list without full reload
 		api.GET("/events", func(c *gin.Context) {
 			ch, unsub := syncNotifier.Subscribe()
 			defer unsub()
@@ -153,10 +154,10 @@ func main() {
 	})
 
 	addr := ":" + cfg.Port
-	log.Printf("服务器启动在 %s (模式: %s)", addr, cfg.Mode)
-	log.Printf("文章目录: %s", cfg.PostsPath)
+	log.Printf("server listening on %s (mode: %s)", addr, cfg.Mode)
+	log.Printf("posts path: %s", cfg.PostsPath)
 
 	if err := r.Run(addr); err != nil {
-		log.Fatalf("启动服务器失败: %v", err)
+		log.Fatalf("server run failed: %v", err)
 	}
 }

@@ -63,7 +63,7 @@ sync:
   interval_minutes: 5
 
 frontend:
-  api_base_url: ""   # 代理不生效时可填 http://localhost:8080
+  port: "3000"   # 前端开发服务器端口
 ```
 
 | 字段 | 说明 | 默认 |
@@ -76,7 +76,7 @@ frontend:
 | `webhook.secret` | GitHub Webhook Secret，生产必填 | 空 |
 | `webhook.git_repo_path` | 生产环境文章仓库在服务器上的路径 | 空 |
 | `sync.interval_minutes` | 定期同步间隔（分钟）；0 表示不启用，仅靠 Webhook 触发 | `0` |
-| `frontend.api_base_url` | 开发时若 Vite 代理不生效可填此后端地址（如 `http://localhost:8080`），前端直连后端；留空则走代理。Vite 启动时从 config.yaml 读取，无需 frontend/.env | 空 |
+| `frontend.port` | 前端开发服务器端口；前端直连后端 127.0.0.1:server.port（同机） | `3000` |
 
 ---
 
@@ -106,7 +106,7 @@ frontend:
 - **开发**：`config.yaml` 里 `mode: dev`、`posts.path: "../posts"`，`webhook.secret` 可留空。
 - **生产**：`mode: prod`，`posts.path` / `GIT_REPO_PATH` 指向文章仓库 clone 目录，**必须**设置 `WEBHOOK_SECRET`（与 GitHub 中一致）。
 
-前端端口与 API 代理在 `frontend/vite.config.js`（开发默认 3000，`/api` 代理到 8080）。
+前端端口在 config.yaml 的 `frontend.port`（默认 3000）；开发时前端直连后端 127.0.0.1:server.port（同机，无代理）。
 
 ---
 

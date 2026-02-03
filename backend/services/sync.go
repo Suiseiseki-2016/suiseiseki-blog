@@ -13,7 +13,7 @@ import (
 	"blog-suiseiseki/utils"
 )
 
-// SyncEventNotifier 同步完成后通知前端（如 SSE），便于静默刷新列表而不整页重载
+// SyncEventNotifier notifies the frontend (e.g. via SSE) when sync completes so the list can refresh.
 type SyncEventNotifier interface {
 	Broadcast()
 }
@@ -36,44 +36,44 @@ func NewSyncService(db *sql.DB, postsPath string, isDev bool, notifier SyncEvent
 	}
 }
 
-// ensurePostsFromRemote 当 posts 无文章时从远程仓库自动 clone
+// ensurePostsFromRemote clones the remote repo when posts dir is empty or missing.
 func (s *SyncService) ensurePostsFromRemote() error {
 	if s.remoteURL == "" {
 		return nil
 	}
 
-	// 目录不存在：直接 clone 到 postsPath
+	// Dir missing: clone directly to postsPath
 	if _, err := os.Stat(s.postsPath); os.IsNotExist(err) {
 		parent := filepath.Dir(s.postsPath)
 		if err := os.MkdirAll(parent, 0755); err != nil {
-			return fmt.Errorf("创建目录失败: %w", err)
+			return fmt.Errorf("failed to create dir: %w", err)
 		}
-		log.Printf("posts 目录不存在，从远程仓库 clone: %s", s.remoteURL)
+		log.Printf("posts dir missing, cloning from remote: %s", s.remoteURL)
 		if err := s.gitClone(s.remoteURL, s.postsPath); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	// 目录存在：检查是否有文章（.md 文件，不含 README）
+	// Dir exists: check for any .md files
 	files, err := s.scanMarkdownFiles()
 	if err != nil {
-		return nil // 如权限等问题，不阻塞后续
+		return nil // e.g. permission issues; don't block startup
 	}
 	if len(files) > 0 {
-		return nil // 已有文章，无需 clone
+		return nil // already has posts, no clone needed
 	}
 
-	// 无文章且已是 git 仓库：后面会走 git pull，不在此处 clone
+	// Empty but already a git repo: git pull will run later
 	if _, err := os.Stat(filepath.Join(s.postsPath, ".git")); err == nil {
 		return nil
 	}
 
-	// 无文章且不是 git 仓库：先 clone 到临时目录，成功后再替换，避免 clone 失败后目录被删空
-	log.Printf("posts 无文章且非 git 仓库，从远程仓库 clone: %s", s.remoteURL)
+	// posts empty and not a git repo: clone to temp dir then replace
+	log.Printf("posts empty and not a git repo, cloning from remote: %s", s.remoteURL)
 	tmpDir, err := os.MkdirTemp(filepath.Dir(s.postsPath), "posts-clone-*")
 	if err != nil {
-		return fmt.Errorf("创建临时目录失败: %w", err)
+		return fmt.Errorf("failed to create temp dir: %w", err)
 	}
 	if err := s.gitClone(s.remoteURL, tmpDir); err != nil {
 		os.RemoveAll(tmpDir)
@@ -81,11 +81,11 @@ func (s *SyncService) ensurePostsFromRemote() error {
 	}
 	if err := os.RemoveAll(s.postsPath); err != nil {
 		os.RemoveAll(tmpDir)
-		return fmt.Errorf("清理 posts 目录失败: %w", err)
+		return fmt.Errorf("failed to clean posts dir: %w", err)
 	}
 	if err := os.Rename(tmpDir, s.postsPath); err != nil {
 		os.RemoveAll(tmpDir)
-		return fmt.Errorf("替换 posts 目录失败: %w", err)
+		return fmt.Errorf("failed to replace posts dir: %w", err)
 	}
 	return nil
 }
@@ -94,56 +94,55 @@ func (s *SyncService) gitClone(url, dest string) error {
 	cmd := exec.Command("git", "clone", "--depth", "1", url, dest)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("git clone 失败: %v, 输出: %s", err, string(output))
+		return fmt.Errorf("git clone failed: %v, output: %s", err, string(output))
 	}
-	log.Printf("git clone 成功: %s", string(output))
+	log.Printf("git clone ok: %s", string(output))
 	return nil
 }
 
-// Sync 同步文章：无文章时先尝试从远程 clone，再扫描目录、解析 Markdown、更新数据库；生产环境先 git pull
+// Sync: ensure posts from remote if needed, scan .md, update DB; prod runs git pull first
 func (s *SyncService) Sync() error {
-	log.Println("开始同步文章...")
+	log.Println("sync: starting...")
 
 	if err := s.ensurePostsFromRemote(); err != nil {
-		log.Printf("ensurePostsFromRemote 失败: %v", err)
-		// 不 return，继续用现有目录
+		log.Printf("ensurePostsFromRemote failed: %v", err)
 	}
 
 	if !s.isDev {
 		if err := s.gitPull(); err != nil {
-			log.Printf("Git pull 失败: %v", err)
+			log.Printf("git pull failed: %v", err)
 		}
 	}
 
 	files, err := s.scanMarkdownFiles()
 	if err != nil {
-		return fmt.Errorf("扫描文件失败: %w", err)
+		return fmt.Errorf("scan files failed: %w", err)
 	}
 
-	log.Printf("找到 %d 个Markdown文件", len(files))
+	log.Printf("sync: found %d markdown file(s)", len(files))
 
 	existingPaths, err := s.getExistingPaths()
 	if err != nil {
-		return fmt.Errorf("获取现有路径失败: %w", err)
+		return fmt.Errorf("get existing paths failed: %w", err)
 	}
 
 	processedPaths := make(map[string]bool)
 	for _, filePath := range files {
 		processedPaths[filePath] = true
 		if err := s.processFile(filePath); err != nil {
-			log.Printf("处理文件 %s 失败: %v", filePath, err)
+			log.Printf("process file %s failed: %v", filePath, err)
 		}
 	}
 
 	for path := range existingPaths {
 		if !processedPaths[path] {
 			if err := s.deletePost(path); err != nil {
-				log.Printf("删除文章 %s 失败: %v", path, err)
+				log.Printf("delete post %s failed: %v", path, err)
 			}
 		}
 	}
 
-	log.Println("同步完成")
+	log.Println("sync: done")
 	if s.notifier != nil {
 		s.notifier.Broadcast()
 	}
@@ -152,17 +151,17 @@ func (s *SyncService) Sync() error {
 
 func (s *SyncService) gitPull() error {
 	if _, err := os.Stat(filepath.Join(s.postsPath, ".git")); os.IsNotExist(err) {
-		return fmt.Errorf("不是Git仓库: %s", s.postsPath)
+		return fmt.Errorf("not a git repo: %s", s.postsPath)
 	}
 
 	cmd := exec.Command("git", "pull")
 	cmd.Dir = s.postsPath
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("git pull 失败: %v, 输出: %s", err, string(output))
+		return fmt.Errorf("git pull failed: %v, output: %s", err, string(output))
 	}
 
-	log.Printf("Git pull 成功: %s", string(output))
+	log.Printf("git pull ok: %s", string(output))
 	return nil
 }
 
@@ -210,7 +209,7 @@ func (s *SyncService) getExistingPaths() (map[string]bool, error) {
 func (s *SyncService) processFile(filePath string) error {
 	fm, _, err := utils.ParseMarkdownFile(filePath)
 	if err != nil {
-		return fmt.Errorf("解析Markdown失败: %w", err)
+		return fmt.Errorf("parse markdown failed: %w", err)
 	}
 
 	slug := fm.Slug
@@ -254,10 +253,10 @@ func (s *SyncService) processFile(filePath string) error {
 
 	_, err = s.db.Exec(query, slug, fm.Title, fm.Summary, fm.Category, publishedAt, filePath)
 	if err != nil {
-		return fmt.Errorf("数据库操作失败: %w", err)
+		return fmt.Errorf("db exec failed: %w", err)
 	}
 
-	log.Printf("处理文章: %s (%s)", fm.Title, slug)
+	log.Printf("sync post: %s (%s)", fm.Title, slug)
 	return nil
 }
 

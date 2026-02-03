@@ -17,7 +17,7 @@ function PostDetail() {
     fetch(apiUrl(`/api/posts/${slug}`))
       .then((res) => {
         if (!res.ok) {
-          throw new Error('文章不存在')
+            throw new Error('Post not found')
         }
         return res.json()
       })
@@ -34,7 +34,7 @@ function PostDetail() {
   if (loading) {
     return (
       <div className="text-center py-12">
-        <div className="text-gray-500">加载中...</div>
+        <div className="text-gray-500">Loading...</div>
       </div>
     )
   }
@@ -42,9 +42,9 @@ function PostDetail() {
   if (error || !post) {
     return (
       <div className="text-center py-12">
-        <div className="text-red-500 mb-4">加载失败: {error || '文章不存在'}</div>
+        <div className="text-red-500 mb-4">Load failed: {error || 'Post not found'}</div>
         <Link to="/" className="text-blue-600 hover:text-blue-800">
-          返回首页
+          Back to home
         </Link>
       </div>
     )
@@ -57,7 +57,7 @@ function PostDetail() {
           to="/"
           className="text-blue-600 hover:text-blue-800 mb-4 inline-block text-sm"
         >
-          ← 返回列表
+          ← Back to list
         </Link>
         <h1 className="text-4xl font-bold text-gray-900 mb-4">{post.title}</h1>
         <div className="flex items-center space-x-4 text-sm text-gray-600">

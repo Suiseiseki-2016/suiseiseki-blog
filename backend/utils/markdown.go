@@ -18,7 +18,7 @@ type FrontMatter struct {
 	Slug        string `yaml:"slug"`
 }
 
-// ParseMarkdownFile 解析Markdown文件，提取Front-matter和内容
+// ParseMarkdownFile parses a Markdown file and extracts front-matter and body.
 func ParseMarkdownFile(filePath string) (*FrontMatter, string, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
@@ -28,15 +28,12 @@ func ParseMarkdownFile(filePath string) (*FrontMatter, string, error) {
 	return ParseMarkdown(string(content))
 }
 
-// ParseMarkdown 解析Markdown字符串
+// ParseMarkdown parses a Markdown string and extracts front-matter and body.
 func ParseMarkdown(content string) (*FrontMatter, string, error) {
-	// 检查是否有Front-matter（以---开头）
 	if !strings.HasPrefix(content, "---\n") {
-		// 没有Front-matter，返回空元数据和原始内容
 		return &FrontMatter{}, content, nil
 	}
 
-	// 找到第二个---，分割Front-matter和内容
 	parts := strings.SplitN(content, "---\n", 3)
 	if len(parts) < 3 {
 		return &FrontMatter{}, content, nil
@@ -45,7 +42,6 @@ func ParseMarkdown(content string) (*FrontMatter, string, error) {
 	frontMatterStr := parts[1]
 	markdownContent := parts[2]
 
-	// 解析YAML
 	var fm FrontMatter
 	if err := yaml.Unmarshal([]byte(frontMatterStr), &fm); err != nil {
 		return nil, "", err
@@ -54,7 +50,7 @@ func ParseMarkdown(content string) (*FrontMatter, string, error) {
 	return &fm, markdownContent, nil
 }
 
-// MarkdownToHTML 将Markdown转换为HTML
+// MarkdownToHTML converts Markdown to HTML.
 func MarkdownToHTML(markdown string) (string, error) {
 	var buf bytes.Buffer
 	md := goldmark.New()
@@ -64,11 +60,9 @@ func MarkdownToHTML(markdown string) (string, error) {
 	return buf.String(), nil
 }
 
-// GenerateSlug 从文件路径生成slug（如果没有在Front-matter中指定）
+// GenerateSlug generates a slug from the file path when not set in front-matter.
 func GenerateSlug(filePath string) string {
-	// 提取文件名（不含扩展名）
 	base := filepath.Base(filePath)
 	name := strings.TrimSuffix(base, ".md")
-	// 简单处理：转小写，替换空格为连字符
 	return strings.ToLower(strings.ReplaceAll(name, " ", "-"))
 }

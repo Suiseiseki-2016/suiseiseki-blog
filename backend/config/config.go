@@ -18,20 +18,23 @@ type Config struct {
 
 	// Posts
 	PostsPath    string
-	PostsRemoteURL string // 当 posts 无文章时自动 clone 的远程仓库 URL，如 https://github.com/xxx/blog-posts.git
+	PostsRemoteURL string // Remote repo URL to clone when posts dir is empty (e.g. https://github.com/xxx/blog-posts.git)
 
 	// GitHub Webhook
 	WebhookSecret string
-	GitRepoPath   string // 生产环境的Git仓库路径
+	GitRepoPath   string // Production path to the posts repo on the server
 
-	// 定期同步：从远程仓库 git pull 并更新数据库；0 表示不启用
+	// Sync: git pull interval (minutes); 0 = disabled
 	SyncIntervalMinutes int
+
+	// Frontend dev server port (for scripts / docs)
+	FrontendPort string
 
 	// Environment
 	IsDev bool
 }
 
-// configFile 对应 config.yaml 结构
+// configFile mirrors config.yaml structure.
 type configFile struct {
 	Server   struct { Port string `yaml:"port"`; Mode string `yaml:"mode"` }
 	Database struct { Path string `yaml:"path"` }
@@ -43,8 +46,10 @@ type configFile struct {
 		Secret      string `yaml:"secret"`
 		GitRepoPath string `yaml:"git_repo_path"`
 	}
-	Sync struct {
-		IntervalMinutes int `yaml:"interval_minutes"`
+	Sync    struct { IntervalMinutes int `yaml:"interval_minutes"` }
+	Frontend struct {
+		Port       string `yaml:"port"`
+		APIBaseURL string `yaml:"api_base_url"`
 	}
 }
 
@@ -59,7 +64,7 @@ func Load() *Config {
 		SyncIntervalMinutes: 0,
 	}
 
-	// 1. 尝试从 config.yaml 加载默认值
+	// 1. Load defaults from config.yaml
 	configPaths := []string{
 		os.Getenv("CONFIG_PATH"),
 		"./config.yaml",
@@ -102,10 +107,13 @@ func Load() *Config {
 		if f.Sync.IntervalMinutes > 0 {
 			cfg.SyncIntervalMinutes = f.Sync.IntervalMinutes
 		}
+		if f.Frontend.Port != "" {
+			cfg.FrontendPort = f.Frontend.Port
+		}
 		break
 	}
 
-	// 2. 环境变量覆盖
+	// 2. Environment variables override
 	if v := os.Getenv("PORT"); v != "" {
 		cfg.Port = v
 	}
@@ -141,10 +149,16 @@ func Load() *Config {
 			cfg.SyncIntervalMinutes = n
 		}
 	}
+	if v := os.Getenv("FRONTEND_PORT"); v != "" {
+		cfg.FrontendPort = v
+	}
 
 	cfg.IsDev = cfg.Mode == "dev"
+	if cfg.FrontendPort == "" {
+		cfg.FrontendPort = "3000"
+	}
 
-	// 3. 文章路径转为绝对路径
+	// 3. Resolve posts path to absolute
 	absPostsPath, err := filepath.Abs(cfg.PostsPath)
 	if err == nil {
 		cfg.PostsPath = absPostsPath

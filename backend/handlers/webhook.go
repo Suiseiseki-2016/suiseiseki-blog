@@ -25,40 +25,36 @@ func NewWebhookHandler(syncService *services.SyncService, secret string) *Webhoo
 	}
 }
 
-// HandleWebhook 处理GitHub Webhook
+// HandleWebhook handles GitHub Webhook requests.
 func (h *WebhookHandler) HandleWebhook(c *gin.Context) {
-	// 验证签名（如果配置了secret）
+	// Verify signature if secret is configured
 	if h.secret != "" {
 		signature := c.GetHeader("X-Hub-Signature-256")
 		if signature == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "缺少签名"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "missing signature"})
 			return
 		}
 
-		// 读取请求体
 		body, err := io.ReadAll(c.Request.Body)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "读取请求体失败"})
+			c.JSON(http.StatusBadRequest, gin.H{"error": "failed to read body"})
 			return
 		}
 
-		// 验证签名
 		if !h.verifySignature(body, signature) {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "签名验证失败"})
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "signature verification failed"})
 			return
 		}
 
-		// 重新设置请求体（因为已经被读取了）
 		c.Request.Body = io.NopCloser(io.Reader(bytes.NewReader(body)))
 	}
 
-	// 执行同步
 	if err := h.syncService.Sync(); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "同步成功"})
+	c.JSON(http.StatusOK, gin.H{"message": "sync ok"})
 }
 
 func (h *WebhookHandler) verifySignature(body []byte, signature string) bool {

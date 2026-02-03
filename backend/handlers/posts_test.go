@@ -21,7 +21,7 @@ func setupTestDB(t *testing.T) (*sql.DB, func()) {
 
 	db, err := database.New(dbPath)
 	if err != nil {
-		t.Fatalf("创建测试数据库失败: %v", err)
+		t.Fatalf("create test db: %v", err)
 	}
 
 	return db.Conn(), func() {
@@ -34,9 +34,9 @@ func insertTestPost(t *testing.T, db *sql.DB, slug, title string, contentPath st
 	_, err := db.Exec(`
 		INSERT INTO posts (slug, title, summary, category, published_at, content_path)
 		VALUES (?, ?, ?, ?, datetime('now'), ?)
-	`, slug, title, "测试摘要", "测试分类", contentPath)
+	`, slug, title, "Test summary", "Test category", contentPath)
 	if err != nil {
-		t.Fatalf("插入测试数据失败: %v", err)
+		t.Fatalf("insert test post: %v", err)
 	}
 }
 
@@ -44,8 +44,8 @@ func TestGetPosts(t *testing.T) {
 	db, cleanup := setupTestDB(t)
 	defer cleanup()
 
-	insertTestPost(t, db, "test-post-1", "测试文章1", "/test/path/test-post-1.md")
-	insertTestPost(t, db, "test-post-2", "测试文章2", "/test/path/test-post-2.md")
+	insertTestPost(t, db, "test-post-1", "Test Post 1", "/test/path/test-post-1.md")
+	insertTestPost(t, db, "test-post-2", "Test Post 2", "/test/path/test-post-2.md")
 
 	handler := NewPostsHandler(db, "/test/posts")
 
@@ -58,21 +58,21 @@ func TestGetPosts(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("期望状态码 200，得到 %d", w.Code)
+		t.Fatalf("want status 200, got %d", w.Code)
 	}
 
 	var response map[string]interface{}
 	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
-		t.Fatalf("解析响应失败: %v", err)
+		t.Fatalf("parse response: %v", err)
 	}
 
 	posts, ok := response["posts"].([]interface{})
 	if !ok {
-		t.Fatal("响应中没有posts字段")
+		t.Fatal("response missing posts field")
 	}
 
 	if len(posts) != 2 {
-		t.Fatalf("期望2篇文章，得到 %d", len(posts))
+		t.Fatalf("want 2 posts, got %d", len(posts))
 	}
 }
 
@@ -84,9 +84,9 @@ func TestGetPost(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	mdPath := filepath.Join(tmpDir, slug+".md")
-	os.WriteFile(mdPath, []byte("# 测试内容\n\n这是测试内容。"), 0644)
+	os.WriteFile(mdPath, []byte("# Test content\n\nThis is test content."), 0644)
 
-	insertTestPost(t, db, slug, "测试文章", mdPath)
+	insertTestPost(t, db, slug, "Test Post", mdPath)
 
 	handler := NewPostsHandler(db, tmpDir)
 
@@ -99,7 +99,7 @@ func TestGetPost(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("期望状态码 200，得到 %d: %s", w.Code, w.Body.String())
+		t.Fatalf("want status 200, got %d: %s", w.Code, w.Body.String())
 	}
 }
 
@@ -118,6 +118,6 @@ func TestGetPostNotFound(t *testing.T) {
 	router.ServeHTTP(w, req)
 
 	if w.Code != http.StatusNotFound {
-		t.Fatalf("期望状态码 404，得到 %d", w.Code)
+		t.Fatalf("want status 404, got %d", w.Code)
 	}
 }
