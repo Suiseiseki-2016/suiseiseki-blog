@@ -23,6 +23,7 @@ export default defineConfig({
     host: '0.0.0.0',
     port: devPort,
     strictPort: true,
+    allowedHosts: ['www.aeoluswu.info', 'aeoluswu.info'],
     proxy: {
       '/api': {
         target: backendTarget,
