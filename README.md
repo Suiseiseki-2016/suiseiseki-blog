@@ -1,6 +1,6 @@
 # Blog Suiseiseki
 
-个人全栈博客：**Go + SQLite** 后端，**React** 前端，文章存于独立 **GitHub 仓库**，支持 Webhook 与定期拉取自动同步。
+个人全栈博客：**Go + SQLite** 后端，**React** 前端，文章存于独立 **GitHub 仓库**，支持启动时同步、手动触发和定期拉取自动同步。
 
 ## 仓库用途
 

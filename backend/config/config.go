@@ -20,9 +20,8 @@ type Config struct {
 	PostsPath    string
 	PostsRemoteURL string // Remote repo URL to clone when posts dir is empty (e.g. https://github.com/xxx/blog-posts.git)
 
-	// GitHub Webhook
-	WebhookSecret string
-	GitRepoPath   string // Production path to the posts repo on the server
+	// Git repo (used to override posts path in prod)
+	GitRepoPath string // Production path to the posts repo on the server
 
 	// Sync: git pull interval (minutes); 0 = disabled
 	SyncIntervalMinutes int
@@ -43,7 +42,6 @@ type configFile struct {
 		RemoteURL string `yaml:"remote_url"`
 	}
 	Webhook  struct {
-		Secret      string `yaml:"secret"`
 		GitRepoPath string `yaml:"git_repo_path"`
 	}
 	Sync    struct { IntervalMinutes int `yaml:"interval_minutes"` }
@@ -59,7 +57,6 @@ func Load() *Config {
 		Mode:                "dev",
 		DBPath:              "./blog.db",
 		PostsPath:           "../posts",
-		WebhookSecret:       "",
 		GitRepoPath:         "",
 		SyncIntervalMinutes: 0,
 	}
@@ -98,9 +95,6 @@ func Load() *Config {
 		if f.Posts.RemoteURL != "" {
 			cfg.PostsRemoteURL = f.Posts.RemoteURL
 		}
-		if f.Webhook.Secret != "" {
-			cfg.WebhookSecret = f.Webhook.Secret
-		}
 		if f.Webhook.GitRepoPath != "" {
 			cfg.GitRepoPath = f.Webhook.GitRepoPath
 		}
@@ -137,9 +131,6 @@ func Load() *Config {
 		} else {
 			cfg.PostsPath = "/var/lib/blog/posts"
 		}
-	}
-	if v := os.Getenv("WEBHOOK_SECRET"); v != "" {
-		cfg.WebhookSecret = v
 	}
 	if v := os.Getenv("GIT_REPO_PATH"); v != "" {
 		cfg.GitRepoPath = v

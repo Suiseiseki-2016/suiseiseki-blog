@@ -71,20 +71,13 @@ func main() {
 	syncNotifier := &syncNotifier{}
 	syncService := services.NewSyncService(db.Conn(), cfg.PostsPath, cfg.IsDev, syncNotifier, cfg.PostsRemoteURL)
 
-	if cfg.IsDev {
-		if cfg.PostsRemoteURL != "" {
-			log.Println("dev: running initial sync (may clone remote), then starting server...")
-			if err := syncService.Sync(); err != nil {
-				log.Printf("initial sync failed: %v", err)
-			}
-		} else {
-			go func() {
-				log.Println("dev: running initial sync...")
-				if err := syncService.Sync(); err != nil {
-					log.Printf("initial sync failed: %v", err)
-				}
-			}()
-		}
+	// run an initial synchronization on startup regardless of the mode. 之前
+	// 仅在开发环境调用，这会导致生产部署后的第一批文章延迟直到
+	// webhook 或定期同步触发。现在启动时就会执行一次，确保服务器
+	// 启动后立刻拥有最新内容。
+	log.Println("running initial sync...")
+	if err := syncService.Sync(); err != nil {
+		log.Printf("initial sync failed: %v", err)
 	}
 
 	if cfg.SyncIntervalMinutes > 0 {
@@ -102,7 +95,6 @@ func main() {
 	}
 
 	postsHandler := handlers.NewPostsHandler(db.Conn(), cfg.PostsPath)
-	webhookHandler := handlers.NewWebhookHandler(syncService, cfg.WebhookSecret)
 
 	r := gin.Default()
 	// Trust only local reverse proxy (Caddy/nginx); avoids "trusted all proxies" warning
@@ -123,7 +115,6 @@ func main() {
 
 	api := r.Group("/api")
 	{
-		api.POST("/webhook", webhookHandler.HandleWebhook)
 		api.GET("/posts", postsHandler.GetPosts)
 		api.GET("/posts/:slug", postsHandler.GetPost)
 		// Static assets from posts repo for relative paths in Markdown
