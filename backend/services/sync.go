@@ -108,10 +108,8 @@ func (s *SyncService) Sync() error {
 		log.Printf("ensurePostsFromRemote failed: %v", err)
 	}
 
-	if !s.isDev {
-		if err := s.gitPull(); err != nil {
-			log.Printf("git pull failed: %v", err)
-		}
+	if err := s.gitPull(); err != nil {
+		log.Printf("git pull failed: %v", err)
 	}
 
 	files, err := s.scanMarkdownFiles()
