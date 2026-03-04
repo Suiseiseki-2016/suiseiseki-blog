@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { apiUrl } from '../api'
 
@@ -7,6 +7,7 @@ function PostDetail() {
   const [post, setPost] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const contentRef = useRef(null)
 
   useEffect(() => {
     if (post?.title) document.title = `${post.title} - Blog`
@@ -30,6 +31,16 @@ function PostDetail() {
         setLoading(false)
       })
   }, [slug])
+
+  useEffect(() => {
+    if (!post?.content || !contentRef.current) return
+    const mermaidEls = contentRef.current.querySelectorAll('.mermaid')
+    if (!mermaidEls.length) return
+    import('mermaid').then(({ default: mermaid }) => {
+      mermaid.initialize({ startOnLoad: false, theme: 'default' })
+      mermaid.run({ nodes: mermaidEls })
+    }).catch(console.error)
+  }, [post])
 
   if (loading) {
     return (
@@ -62,20 +73,20 @@ function PostDetail() {
         <h1 className="text-4xl font-bold text-gray-900 mb-4">{post.title}</h1>
         <div className="flex items-center space-x-4 text-sm text-gray-600">
           <time dateTime={post.published_at}>
-            {new Date(post.published_at).toLocaleDateString('zh-CN', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            })}
+            {(() => {
+              const [y, m, d] = post.published_at.split('T')[0].split('-').map(Number)
+              return new Date(y, m - 1, d).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
+            })()}
           </time>
-          {post.category && (
-            <span className="px-3 py-1 bg-gray-100 rounded text-gray-700">
-              {post.category}
+          {post.tags && post.tags.map((tag) => (
+            <span key={tag} className="px-3 py-1 bg-gray-100 rounded text-gray-700">
+              {tag}
             </span>
-          )}
+          ))}
         </div>
       </header>
       <div
+        ref={contentRef}
         className="prose prose-lg max-w-none"
         dangerouslySetInnerHTML={{ __html: post.content }}
         style={{

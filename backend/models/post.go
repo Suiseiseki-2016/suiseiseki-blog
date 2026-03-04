@@ -7,7 +7,7 @@ type Post struct {
 	Slug        string    `json:"slug"`
 	Title       string    `json:"title"`
 	Summary     string    `json:"summary"`
-	Category    string    `json:"category"`
+	Tags        []string  `json:"tags"`
 	PublishedAt time.Time `json:"published_at"`
 	ContentPath string    `json:"-"`
 	UpdatedAt   time.Time `json:"updated_at"`

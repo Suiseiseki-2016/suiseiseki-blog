@@ -215,12 +215,21 @@ func (s *SyncService) processFile(filePath string) error {
 		slug = utils.GenerateSlug(filePath)
 	}
 
+	category := fm.Category
+	if len(fm.Tags) > 0 {
+		category = strings.Join(fm.Tags, ",")
+	}
+
 	var publishedAt time.Time
 	if fm.PublishedAt != "" {
 		formats := []string{
 			"2006-01-02",
 			"2006-01-02 15:04:05",
+			"2006-01-02 15:04:05-07:00",
+			"2006-01-02 15:04:05.999999999-07:00",
+			"2006-01-02T15:04:05",
 			time.RFC3339,
+			time.RFC3339Nano,
 		}
 		for _, format := range formats {
 			if t, err := time.Parse(format, fm.PublishedAt); err == nil {
@@ -249,7 +258,7 @@ func (s *SyncService) processFile(filePath string) error {
 			updated_at = CURRENT_TIMESTAMP
 	`
 
-	_, err = s.db.Exec(query, slug, fm.Title, fm.Summary, fm.Category, publishedAt, filePath)
+	_, err = s.db.Exec(query, slug, fm.Title, fm.Summary, category, publishedAt, filePath)
 	if err != nil {
 		return fmt.Errorf("db exec failed: %w", err)
 	}

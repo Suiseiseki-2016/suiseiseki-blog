@@ -2,8 +2,10 @@ package utils
 
 import (
 	"bytes"
+	"html"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/yuin/goldmark"
@@ -11,11 +13,12 @@ import (
 )
 
 type FrontMatter struct {
-	Title       string `yaml:"title"`
-	Summary     string `yaml:"summary"`
-	Category    string `yaml:"category"`
-	PublishedAt string `yaml:"published_at"`
-	Slug        string `yaml:"slug"`
+	Title       string   `yaml:"title"`
+	Summary     string   `yaml:"summary"`
+	Category    string   `yaml:"category"`
+	Tags        []string `yaml:"tags"`
+	PublishedAt string   `yaml:"published_at"`
+	Slug        string   `yaml:"slug"`
 }
 
 // ParseMarkdownFile parses a Markdown file and extracts front-matter and body.
@@ -50,14 +53,29 @@ func ParseMarkdown(content string) (*FrontMatter, string, error) {
 	return &fm, markdownContent, nil
 }
 
-// MarkdownToHTML converts Markdown to HTML.
+var reMermaid = regexp.MustCompile(`(?s)<pre><code class="language-mermaid">(.*?)</code></pre>`)
+
+// MarkdownToHTML converts Markdown to HTML, with mermaid fenced blocks rendered
+// as <div class="mermaid"> elements for client-side rendering.
 func MarkdownToHTML(markdown string) (string, error) {
 	var buf bytes.Buffer
 	md := goldmark.New()
 	if err := md.Convert([]byte(markdown), &buf); err != nil {
 		return "", err
 	}
-	return buf.String(), nil
+	return convertMermaidBlocks(buf.String()), nil
+}
+
+// convertMermaidBlocks replaces goldmark-rendered mermaid code blocks with
+// <div class="mermaid"> elements, HTML-unescaping the diagram source.
+func convertMermaidBlocks(h string) string {
+	return reMermaid.ReplaceAllStringFunc(h, func(match string) string {
+		subs := reMermaid.FindStringSubmatch(match)
+		if len(subs) != 2 {
+			return match
+		}
+		return `<div class="mermaid">` + html.UnescapeString(subs[1]) + `</div>`
+	})
 }
 
 // GenerateSlug generates a slug from the file path when not set in front-matter.

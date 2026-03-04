@@ -137,17 +137,16 @@ function PostsList() {
             <div className="flex items-center justify-between text-sm text-gray-500">
               <div className="flex items-center space-x-4">
                 <time dateTime={post.published_at}>
-                  {new Date(post.published_at).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
+                  {(() => {
+                    const [y, m, d] = post.published_at.split('T')[0].split('-').map(Number)
+                    return new Date(y, m - 1, d).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
+                  })()}
                 </time>
-                {post.category && (
-                  <span className="px-2 py-1 bg-gray-100 rounded text-gray-700">
-                    {post.category}
+                {post.tags && post.tags.map((tag) => (
+                  <span key={tag} className="px-2 py-1 bg-gray-100 rounded text-gray-700">
+                    {tag}
                   </span>
-                )}
+                ))}
               </div>
               <Link
                 to={`/posts/${post.slug}`}

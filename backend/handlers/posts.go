@@ -52,13 +52,13 @@ func (h *PostsHandler) GetPosts(c *gin.Context) {
 	var posts []models.Post
 	for rows.Next() {
 		var p models.Post
-		var publishedAt, updatedAt string
+		var publishedAt, updatedAt, category string
 		err := rows.Scan(
 			&p.ID,
 			&p.Slug,
 			&p.Title,
 			&p.Summary,
-			&p.Category,
+			&category,
 			&publishedAt,
 			&p.ContentPath,
 			&updatedAt,
@@ -68,8 +68,9 @@ func (h *PostsHandler) GetPosts(c *gin.Context) {
 			return
 		}
 
-		p.PublishedAt, _ = time.Parse("2006-01-02 15:04:05", publishedAt)
-		p.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+		p.Tags = splitTags(category)
+		p.PublishedAt, _ = parseTime(publishedAt)
+		p.UpdatedAt, _ = parseTime(updatedAt)
 
 		posts = append(posts, p)
 	}
@@ -85,7 +86,7 @@ func (h *PostsHandler) GetPost(c *gin.Context) {
 	slug := c.Param("slug")
 
 	var p models.Post
-	var publishedAt, updatedAt string
+	var publishedAt, updatedAt, category string
 	err := h.db.QueryRow(`
 		SELECT id, slug, title, summary, category, published_at, content_path, updated_at
 		FROM posts
@@ -95,7 +96,7 @@ func (h *PostsHandler) GetPost(c *gin.Context) {
 		&p.Slug,
 		&p.Title,
 		&p.Summary,
-		&p.Category,
+		&category,
 		&publishedAt,
 		&p.ContentPath,
 		&updatedAt,
@@ -110,8 +111,9 @@ func (h *PostsHandler) GetPost(c *gin.Context) {
 		return
 	}
 
-	p.PublishedAt, _ = time.Parse("2006-01-02 15:04:05", publishedAt)
-	p.UpdatedAt, _ = time.Parse("2006-01-02 15:04:05", updatedAt)
+	p.Tags = splitTags(category)
+	p.PublishedAt, _ = parseTime(publishedAt)
+	p.UpdatedAt, _ = parseTime(updatedAt)
 
 	_, markdownContent, err := utils.ParseMarkdownFile(p.ContentPath)
 	if err != nil {
@@ -145,6 +147,31 @@ func (h *PostsHandler) GetPost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, postWithContent)
+}
+
+func splitTags(s string) []string {
+	tags := []string{}
+	for _, t := range strings.Split(s, ",") {
+		if trimmed := strings.TrimSpace(t); trimmed != "" {
+			tags = append(tags, trimmed)
+		}
+	}
+	return tags
+}
+
+func parseTime(s string) (time.Time, error) {
+	for _, format := range []string{
+		"2006-01-02 15:04:05-07:00",
+		"2006-01-02 15:04:05.999999999-07:00",
+		time.RFC3339,
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+	} {
+		if t, err := time.Parse(format, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, nil
 }
 
 // rewriteRelativeImgSrc rewrites relative img src in HTML to /api/posts-assets/{postDirRel}/{src}.
