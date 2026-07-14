@@ -41,9 +41,10 @@ function PostsList() {
       })
       .then((data) => {
         const list = data.posts || []
+        const total = data.total || 0
         setPosts(list)
         setOffset(list.length)
-        setHasMore(list.length >= PAGE_SIZE)
+        setHasMore(offset + list.length < total)
         setLoading(false)
       })
       .catch((err) => {
@@ -68,12 +69,16 @@ function PostsList() {
         .then((res) => res.ok ? res.json() : Promise.reject(new Error('refetch failed')))
         .then((data) => {
           const list = data.posts || []
+          const total = data.total || 0
           setPosts(list)
           setOffset(list.length)
-          setHasMore(list.length >= PAGE_SIZE)
+          setHasMore(list.length < total)
         })
         .catch(() => {})
     })
+    es.onerror = () => {
+      // EventSource auto-reconnects; just suppress console noise
+    }
     return () => es.close()
   }, [])
 
@@ -84,9 +89,10 @@ function PostsList() {
       .then((res) => res.json())
       .then((data) => {
         const list = data.posts || []
+        const total = data.total || 0
         setPosts((prev) => [...prev, ...list])
         setOffset((prev) => prev + list.length)
-        setHasMore(list.length >= PAGE_SIZE)
+        setHasMore(offset + list.length < total)
         setLoadingMore(false)
       })
       .catch(() => setLoadingMore(false))
@@ -138,7 +144,9 @@ function PostsList() {
               <div className="flex items-center space-x-4">
                 <time dateTime={post.published_at}>
                   {(() => {
-                    const [y, m, d] = post.published_at.split('T')[0].split('-').map(Number)
+                    if (!post.published_at) return ''
+                    const dateStr = post.published_at.split('T')[0]
+                    const [y, m, d] = dateStr.split('-').map(Number)
                     return new Date(y, m - 1, d).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
                   })()}
                 </time>

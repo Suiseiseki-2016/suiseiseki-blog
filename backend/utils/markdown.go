@@ -33,6 +33,9 @@ func ParseMarkdownFile(filePath string) (*FrontMatter, string, error) {
 
 // ParseMarkdown parses a Markdown string and extracts front-matter and body.
 func ParseMarkdown(content string) (*FrontMatter, string, error) {
+	// Normalize CRLF to LF so front-matter detection works on Windows-authored files
+	content = strings.ReplaceAll(content, "\r\n", "\n")
+
 	if !strings.HasPrefix(content, "---\n") {
 		return &FrontMatter{}, content, nil
 	}

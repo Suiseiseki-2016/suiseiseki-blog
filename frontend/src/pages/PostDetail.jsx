@@ -74,7 +74,9 @@ function PostDetail() {
         <div className="flex items-center space-x-4 text-sm text-gray-600">
           <time dateTime={post.published_at}>
             {(() => {
-              const [y, m, d] = post.published_at.split('T')[0].split('-').map(Number)
+              if (!post.published_at) return ''
+              const dateStr = post.published_at.split('T')[0]
+              const [y, m, d] = dateStr.split('-').map(Number)
               return new Date(y, m - 1, d).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })
             })()}
           </time>

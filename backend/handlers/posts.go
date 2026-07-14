@@ -6,6 +6,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,8 +33,17 @@ func NewPostsHandler(db *sql.DB, postsPath string) *PostsHandler {
 
 // GetPosts returns the list of posts.
 func (h *PostsHandler) GetPosts(c *gin.Context) {
-	limit := c.DefaultQuery("limit", "20")
-	offset := c.DefaultQuery("offset", "0")
+	limitStr := c.DefaultQuery("limit", "20")
+	offsetStr := c.DefaultQuery("offset", "0")
+
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit < 1 || limit > 100 {
+		limit = 20
+	}
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil || offset < 0 {
+		offset = 0
+	}
 
 	query := `
 		SELECT id, slug, title, summary, category, published_at, content_path, updated_at
@@ -75,9 +85,13 @@ func (h *PostsHandler) GetPosts(c *gin.Context) {
 		posts = append(posts, p)
 	}
 
+	// Get actual total count of all posts (not just this page)
+	var total int
+	h.db.QueryRow("SELECT COUNT(*) FROM posts").Scan(&total)
+
 	c.JSON(http.StatusOK, gin.H{
 		"posts": posts,
-		"total": len(posts),
+		"total": total,
 	})
 }
 
