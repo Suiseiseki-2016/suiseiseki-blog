@@ -107,6 +107,44 @@ This is **bold** text.`
 	}
 }
 
+func TestMarkdownToHTML_Extensions(t *testing.T) {
+	markdown := "| Col A | Col B |\n|---|---|\n| 1 | 2 |\n\nhttps://github.com/Suiseiseki-2016/qwenvl_hacker\n\n```mermaid\nflowchart LR\n  A --> B\n```\n"
+
+	htmlOut, err := MarkdownToHTML(markdown)
+	if err != nil {
+		t.Fatalf("convert: %v", err)
+	}
+	for _, want := range []string{
+		"<table>",
+		"<thead>",
+		"<tbody>",
+		`<a href="https://github.com/Suiseiseki-2016/qwenvl_hacker"`,
+		`<div class="mermaid">`,
+	} {
+		if !strings.Contains(htmlOut, want) {
+			t.Errorf("expected rendered HTML to contain %q, got:\n%s", want, htmlOut)
+		}
+	}
+}
+
+func TestStripLeadingDuplicateH1(t *testing.T) {
+	title := `Shadow in the Pixels: "VLM" & Security`
+	dup := "<h1>Shadow in the Pixels: &quot;VLM&quot; &amp; Security</h1>\n<p>Body</p>"
+	if got := StripLeadingDuplicateH1(dup, title); got != "<p>Body</p>" {
+		t.Errorf("expected leading duplicate h1 stripped, got %q", got)
+	}
+
+	diff := "<h1>Different Heading</h1>\n<p>Body</p>"
+	if got := StripLeadingDuplicateH1(diff, title); got != diff {
+		t.Errorf("expected non-matching h1 preserved, got %q", got)
+	}
+
+	nonLeading := "<p>Intro</p>\n<h1>Shadow in the Pixels: &quot;VLM&quot; &amp; Security</h1>"
+	if got := StripLeadingDuplicateH1(nonLeading, title); got != nonLeading {
+		t.Errorf("expected non-leading h1 preserved, got %q", got)
+	}
+}
+
 func TestGenerateSlug(t *testing.T) {
 	tests := []struct {
 		path string

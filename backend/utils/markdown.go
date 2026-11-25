@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
 	"gopkg.in/yaml.v3"
 )
 
@@ -56,17 +57,50 @@ func ParseMarkdown(content string) (*FrontMatter, string, error) {
 	return &fm, markdownContent, nil
 }
 
-var reMermaid = regexp.MustCompile(`(?s)<pre><code class="language-mermaid">(.*?)</code></pre>`)
+var (
+	reMermaid   = regexp.MustCompile(`(?s)<pre><code class="language-mermaid">(.*?)</code></pre>`)
+	reLeadingH1 = regexp.MustCompile(`(?is)^\s*<h1\b[^>]*>(.*?)</h1>\s*`)
+	reHTMLTag   = regexp.MustCompile(`<[^>]+>`)
+)
 
-// MarkdownToHTML converts Markdown to HTML, with mermaid fenced blocks rendered
-// as <div class="mermaid"> elements for client-side rendering.
+// MarkdownToHTML converts Markdown to HTML, with GFM extensions enabled and
+// mermaid fenced blocks rendered as <div class="mermaid"> elements.
 func MarkdownToHTML(markdown string) (string, error) {
 	var buf bytes.Buffer
-	md := goldmark.New()
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.Table,
+			extension.Strikethrough,
+			extension.TaskList,
+			extension.Linkify,
+		),
+	)
 	if err := md.Convert([]byte(markdown), &buf); err != nil {
 		return "", err
 	}
 	return convertMermaidBlocks(buf.String()), nil
+}
+
+// StripLeadingDuplicateH1 removes a leading <h1> element from rendered HTML when
+// its normalized plain text matches the post title shown in the page header.
+func StripLeadingDuplicateH1(htmlContent, title string) string {
+	normalizedTitle := normalizeHeadingText(title)
+	if normalizedTitle == "" {
+		return htmlContent
+	}
+	loc := reLeadingH1.FindStringSubmatchIndex(htmlContent)
+	if loc == nil {
+		return htmlContent
+	}
+	headingPlain := normalizeHeadingText(html.UnescapeString(reHTMLTag.ReplaceAllString(htmlContent[loc[2]:loc[3]], "")))
+	if strings.EqualFold(headingPlain, normalizedTitle) {
+		return htmlContent[loc[1]:]
+	}
+	return htmlContent
+}
+
+func normalizeHeadingText(s string) string {
+	return strings.Join(strings.Fields(s), " ")
 }
 
 // convertMermaidBlocks replaces goldmark-rendered mermaid code blocks with

@@ -13,7 +13,7 @@ function PostsList() {
   const [offset, setOffset] = useState(0)
 
   useEffect(() => {
-    document.title = 'Posts - Blog'
+    document.title = 'Posts - Di Wu'
   }, [])
 
   useEffect(() => {
@@ -44,16 +44,16 @@ function PostsList() {
         const total = data.total || 0
         setPosts(list)
         setOffset(list.length)
-        setHasMore(offset + list.length < total)
+        setHasMore(list.length < total)
         setLoading(false)
       })
       .catch((err) => {
         clearTimeout(timeoutId)
         let msg = err.message || 'Network error'
         if (err.name === 'AbortError') {
-          msg = `Request timeout. Ensure backend is running: ${apiUrl('/health')}`
+          msg = 'Request timeout, please try again later.'
         } else if (typeof msg === 'string' && (msg.includes('Failed to fetch') || msg.includes('Connection refused') || msg.includes('NetworkError'))) {
-          msg = `Connection refused — backend not running? Start with: ./scripts/start-dev.sh (or run backend in another terminal: cd backend && go run main.go)`
+          msg = 'Failed to connect to the blog service, please try again later.'
         }
         setError(msg)
         setLoading(false)
@@ -102,7 +102,6 @@ function PostsList() {
     return (
       <div className="text-center py-12">
         <div className="text-gray-500">Loading...</div>
-        <p className="text-sm text-gray-400 mt-2">If no response, ensure backend is running: <a href={apiUrl('/health')} target="_blank" rel="noopener noreferrer" className="text-blue-600">{apiUrl('/health')}</a></p>
       </div>
     )
   }
@@ -140,9 +139,9 @@ function PostsList() {
             {post.summary && (
               <p className="text-gray-600 mb-4 line-clamp-2">{post.summary}</p>
             )}
-            <div className="flex items-center justify-between text-sm text-gray-500">
-              <div className="flex items-center space-x-4">
-                <time dateTime={post.published_at}>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-2">
+                <time dateTime={post.published_at} className="whitespace-nowrap shrink-0 mr-1">
                   {(() => {
                     if (!post.published_at) return ''
                     const dateStr = post.published_at.split('T')[0]
@@ -151,14 +150,14 @@ function PostsList() {
                   })()}
                 </time>
                 {post.tags && post.tags.map((tag) => (
-                  <span key={tag} className="px-2 py-1 bg-gray-100 rounded text-gray-700">
+                  <span key={tag} className="px-2 py-0.5 bg-gray-100 rounded text-gray-700 whitespace-nowrap shrink-0">
                     {tag}
                   </span>
                 ))}
               </div>
               <Link
                 to={`/posts/${post.slug}`}
-                className="text-blue-600 hover:text-blue-800 font-medium"
+                className="text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap shrink-0"
               >
                 Read more →
               </Link>

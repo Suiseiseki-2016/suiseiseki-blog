@@ -2,8 +2,12 @@
 # 用于生产环境，自动处理 HTTPS
 
 yourdomain.com {
-    # 反向代理到后端 API
+    # 反向代理到后端 API 与健康检查
     handle /api/* {
+        reverse_proxy localhost:8080
+    }
+
+    handle /health {
         reverse_proxy localhost:8080
     }
 

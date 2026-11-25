@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 
 function NotFound() {
   useEffect(() => {
-    document.title = '404 - Page Not Found - Blog'
-    return () => { document.title = 'Blog' }
+    document.title = '404 - Page Not Found - Di Wu'
+    return () => { document.title = 'Di Wu' }
   }, [])
 
   return (

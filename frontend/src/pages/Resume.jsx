@@ -1,22 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 
 const ProfessionalBio = () => {
+  useEffect(() => {
+    document.title = 'Resume - Di Wu';
+    return () => { document.title = 'Di Wu'; };
+  }, []);
+
   return (
-    <div className="bg-white text-gray-900 py-16 px-6 md:px-20 lg:px-48 font-sans">
+    <div className="bg-white text-gray-900 rounded-lg shadow-sm py-10 px-6 sm:px-10 md:px-12 font-sans">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;700&family=Inter:wght@300;400;600&display=swap');
-        .serif-font { font-family: 'Noto Serif SC', serif; }
-        .inter-font { font-family: 'Inter', sans-serif; }
+        .serif-font { font-family: 'Noto Serif SC', 'Songti SC', 'STSong', Georgia, serif; }
+        .inter-font { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', sans-serif; }
       `}</style>
 
       {/* 头部 */}
-      <header className="mb-16 border-b border-gray-200 pb-10">
-        <h1 className="text-5xl font-bold mb-4 serif-font">吴迪 (Di Wu)</h1>
-        <p className="text-xl text-gray-600 italic inter-font">北京大学 · 信息与计算科学（双学位心理与认知科学）</p>
-        <div className="mt-6 flex flex-wrap gap-6 text-sm text-gray-500 inter-font">
-          <span>📧 suiseiseki@stu.pku.edu.cn</span>
-          <span>📞 177-6432-9625</span>
-          <a href="https://www.aeoluswu.info/resume" className="hover:text-blue-600 underline">🌐 Personal Site</a>
+      <header className="mb-12 border-b border-gray-200 pb-8">
+        <h1 className="text-3xl sm:text-5xl font-bold mb-4 serif-font">吴迪 (Di Wu)</h1>
+        <p className="text-lg sm:text-xl text-gray-600 italic inter-font">北京大学 · 信息与计算科学（双学位心理与认知科学）</p>
+        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-600 inter-font">
+          <span>📧 <a href="mailto:suiseiseki@stu.pku.edu.cn" className="hover:text-blue-600 underline">suiseiseki@stu.pku.edu.cn</a></span>
+          <span>💻 <a href="https://github.com/Suiseiseki-2016" target="_blank" rel="noopener noreferrer" className="hover:text-blue-600 underline">GitHub</a></span>
+          <span>📝 <Link to="/" className="hover:text-blue-600 underline">Technical Blog</Link></span>
         </div>
       </header>
 
@@ -26,7 +31,7 @@ const ProfessionalBio = () => {
           <h2 className="text-2xl font-bold mb-4 border-l-4 border-black pl-4 serif-font">教育背景</h2>
           <div className="space-y-6 text-gray-800 leading-relaxed">
             <div>
-              <div className="flex justify-between items-baseline">
+              <div className="flex flex-wrap justify-between items-baseline gap-2">
                 <h3 className="font-bold text-lg">北京大学</h3>
                 <span className="text-sm text-gray-500">2023.09 ~ 至今</span>
               </div>
@@ -35,10 +40,12 @@ const ProfessionalBio = () => {
                 <li>2023 至今，担任班级团支部书记。</li>
                 <li>2024～2025 春季学期，担任北京大学 Python 程序设计与数据科学课程助教。</li>
                 <li>2025～2026 春季学期，担任北京大学程序设计实习、算法设计与分析课程助教。</li>
+                <li>2026～2027 秋季学期，担任北京大学计算概论（B）课程助教。</li>
+                <li>2026～2027 秋季学期，担任朋辈一对一咨询师。</li>
               </ul>
             </div>
             <div>
-              <div className="flex justify-between items-baseline">
+              <div className="flex flex-wrap justify-between items-baseline gap-2">
                 <h3 className="font-bold text-lg">安徽师范大学附属中学</h3>
                 <span className="text-sm text-gray-500">2020.09 ~ 2023.06</span>
               </div>
@@ -52,7 +59,7 @@ const ProfessionalBio = () => {
           <h2 className="text-2xl font-bold mb-4 border-l-4 border-black pl-4 serif-font">项目经验</h2>
           <div className="space-y-8 text-gray-800 leading-relaxed">
             <div>
-              <div className="flex justify-between items-baseline">
+              <div className="flex flex-wrap justify-between items-baseline gap-2">
                 <h3 className="font-bold text-lg">LIBIHT — Cross-Platform Intel Hardware Trace Library</h3>
                 <span className="text-sm text-gray-500">Blackhat 2024</span>
               </div>
@@ -61,7 +68,7 @@ const ProfessionalBio = () => {
               </p>
             </div>
             <div>
-              <div className="flex justify-between items-baseline">
+              <div className="flex flex-wrap justify-between items-baseline gap-2">
                 <h3 className="font-bold text-lg">NUS 2025 暑期研究 — 访问学者</h3>
                 <span className="text-sm text-gray-500">2025.06 ~ 2025.09</span>
               </div>
@@ -77,7 +84,19 @@ const ProfessionalBio = () => {
           <h2 className="text-2xl font-bold mb-4 border-l-4 border-black pl-4 serif-font">实习经验</h2>
           <div className="space-y-8 text-gray-800 leading-relaxed">
             <div>
-              <div className="flex justify-between items-baseline">
+              <div className="flex flex-wrap justify-between items-baseline gap-2">
+                <h3 className="font-bold text-lg">乾象投资（Metabit）— Engineer</h3>
+                <span className="text-sm text-gray-500">2026.06 ~ 至今</span>
+              </div>
+              <ul className="list-disc ml-5 mt-2 space-y-2">
+                <li><strong>多 Agent 分布式架构与通信：</strong>设计并实现多 Agent 协同系统的网络架构与通信机制，通过网络协议调度大规模分布式 Agent 集群，实现 Agent 多平台化。</li>
+                <li><strong>多机权限与凭证管理：</strong>设计并实现面向多机环境的权限与凭证管理 RPC 接口，保障分布式节点间的统一鉴权与凭证安全流转。</li>
+                <li><strong>后台任务生命周期管理：</strong>实现后台任务（Background Task）的统一生命周期管理，覆盖任务调度、状态追踪与资源回收。</li>
+                <li><strong>性能优化与前端平台开发：</strong>负责系统性能与缓存优化（包括 Skill 逐层按需暴露机制等），降低上下文与调度开销、提升响应速度；同时参与配套前端平台的开发与功能迭代。</li>
+              </ul>
+            </div>
+            <div>
+              <div className="flex flex-wrap justify-between items-baseline gap-2">
                 <h3 className="font-bold text-lg">腾讯 — 基础安全研究员</h3>
                 <span className="text-sm text-gray-500">2024.07 ~ 2026.03</span>
               </div>
@@ -89,15 +108,6 @@ const ProfessionalBio = () => {
                 <li><strong>自动化漏洞复现 Pipeline：</strong>构建基于 Claude Agent SDK 的自动化漏洞复现 Pipeline。通过 MonoAgent 架构实现任务拆解与逻辑解耦，将漏洞验证步骤封装为可复用的"Skills"，构建具备自我推理能力的攻击验证闭环。</li>
               </ul>
             </div>
-            <div>
-              <div className="flex justify-between items-baseline">
-                <h3 className="font-bold text-lg">乾象投资 — Engineer</h3>
-                <span className="text-sm text-gray-500">2026.06 ~ 2026.09</span>
-              </div>
-              <ul className="list-disc ml-5 mt-2 space-y-2">
-                <li>设计实现多 agent 协同系统的网络架构与通信。通过网络协议调度大规模分布式 agent 集群，实现 agent 多平台化。</li>
-              </ul>
-            </div>
           </div>
         </section>
 
@@ -105,9 +115,10 @@ const ProfessionalBio = () => {
         <section>
           <h2 className="text-2xl font-bold mb-4 border-l-4 border-black pl-4 serif-font">荣誉证书</h2>
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-2 text-gray-700 list-none">
+            <li>2025–2026 学年北京大学三好学生、北京大学三等奖学金</li>
             <li>2026 年阿里云 CTF 决赛第 8 名</li>
             <li>2024 年强网杯挑战赛线下决赛二等奖</li>
-            <li>2024 年京麟 CTF 决赛第 6 名</li>
+            <li>2024 年京麒 CTF 决赛第 6 名</li>
             <li>2023 年 ICPC 区域赛合肥站金牌</li>
             <li>2021、2022 年 NOI 银牌</li>
             <li>2020、2021、2022 NOIWC 金牌</li>
@@ -130,15 +141,11 @@ const ProfessionalBio = () => {
         <section>
           <h2 className="text-2xl font-bold mb-4 border-l-4 border-black pl-4 serif-font">技能特长</h2>
           <ul className="list-disc ml-5 space-y-1 text-gray-700">
-            <li>熟练使用 C、C++ 和 Python 进行开发，拥有 TypeScript、PHP 等多种语言开发经验。</li>
-            <li>善于在工程中利用 AI 技术。</li>
+            <li>熟练使用 C、C++、Python 和 TypeScript 进行开发，具备 Go、PHP 等语言及前后端全栈开发经验。</li>
+            <li>熟悉分布式多 Agent 系统架构、RPC 通信、任务生命周期管理与缓存/上下文性能优化，具备大模型安全与 AI Agent 工程落地经验。</li>
           </ul>
         </section>
       </main>
-
-      <footer className="mt-20 pt-10 border-t border-gray-100 text-center text-gray-400 text-sm">
-        © {new Date().getFullYear()} 吴迪 · 持续探索安全技术的边界
-      </footer>
     </div>
   );
 };

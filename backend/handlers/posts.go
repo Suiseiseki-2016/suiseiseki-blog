@@ -140,6 +140,7 @@ func (h *PostsHandler) GetPost(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "markdown to HTML failed"})
 		return
 	}
+	htmlContent = utils.StripLeadingDuplicateH1(htmlContent, p.Title)
 
 	// Rewrite relative img src to /api/posts-assets/... so repo images display correctly
 	postDirRel := "."
