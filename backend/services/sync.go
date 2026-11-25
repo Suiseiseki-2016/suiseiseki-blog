@@ -258,9 +258,24 @@ func (s *SyncService) processFile(filePath string) error {
 			updated_at = CURRENT_TIMESTAMP
 	`
 
-	_, err = s.db.Exec(query, slug, fm.Title, fm.Summary, category, publishedAt, filePath)
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("begin tx failed: %w", err)
+	}
+	defer tx.Rollback()
+
+	_, err = tx.Exec(query, slug, fm.Title, fm.Summary, category, publishedAt, filePath)
 	if err != nil {
 		return fmt.Errorf("db exec failed: %w", err)
+	}
+
+	// Remove any older slug row left behind when a markdown file's frontmatter slug is renamed.
+	if _, err := tx.Exec("DELETE FROM posts WHERE content_path = ? AND slug != ?", filePath, slug); err != nil {
+		return fmt.Errorf("cleanup stale slug failed: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tx failed: %w", err)
 	}
 
 	log.Printf("sync post: %s (%s)", fm.Title, slug)

@@ -107,3 +107,60 @@ slug: old-post
 		t.Fatalf("want post deleted, still have %d rows", count)
 	}
 }
+
+func TestSyncService_SlugRename(t *testing.T) {
+	tmpDir := t.TempDir()
+	dbPath := filepath.Join(tmpDir, "test.db")
+	postsDir := filepath.Join(tmpDir, "posts")
+
+	os.MkdirAll(postsDir, 0755)
+
+	db, err := database.New(dbPath)
+	if err != nil {
+		t.Fatalf("create db: %v", err)
+	}
+	defer db.Close()
+
+	mdFile := filepath.Join(postsDir, "post.md")
+	if err := os.WriteFile(mdFile, []byte(`---
+title: Rename Post
+slug: old-slug
+---
+
+# Rename Post`), 0644); err != nil {
+		t.Fatalf("write initial markdown: %v", err)
+	}
+
+	syncService := NewSyncService(db.Conn(), postsDir, true, nil, "")
+	if err := syncService.Sync(); err != nil {
+		t.Fatalf("first sync: %v", err)
+	}
+
+	if err := os.WriteFile(mdFile, []byte(`---
+title: Rename Post
+slug: new-slug
+---
+
+# Rename Post`), 0644); err != nil {
+		t.Fatalf("overwrite markdown: %v", err)
+	}
+
+	if err := syncService.Sync(); err != nil {
+		t.Fatalf("second sync: %v", err)
+	}
+
+	var totalCount, oldCount, newCount int
+	if err := db.Conn().QueryRow("SELECT COUNT(*) FROM posts").Scan(&totalCount); err != nil {
+		t.Fatalf("query total: %v", err)
+	}
+	if err := db.Conn().QueryRow("SELECT COUNT(*) FROM posts WHERE slug = ?", "old-slug").Scan(&oldCount); err != nil {
+		t.Fatalf("query old slug: %v", err)
+	}
+	if err := db.Conn().QueryRow("SELECT COUNT(*) FROM posts WHERE slug = ?", "new-slug").Scan(&newCount); err != nil {
+		t.Fatalf("query new slug: %v", err)
+	}
+
+	if totalCount != 1 || oldCount != 0 || newCount != 1 {
+		t.Fatalf("unexpected row counts after slug rename: total=%d, old=%d, new=%d", totalCount, oldCount, newCount)
+	}
+}
